@@ -21,6 +21,128 @@ namespace HotelBooking.UnitTests
             bookingManager = new BookingManager(bookingRepository, roomRepository);
         }
 
+        #region CreateBooking
+        [Fact]
+        public async Task CreateBooking_StartDateAfterEndDate_ThrowsArgumentException()
+        {
+            // Arrange
+            Booking booking = new Booking
+            {
+                StartDate = DateTime.Today.AddDays(2),
+                EndDate = DateTime.Today.AddDays(1)
+            };
+
+            // Act
+            Task result() => bookingManager.CreateBooking(booking);
+
+            // Assert
+            await Assert.ThrowsAsync<ArgumentException>(result);
+        }
+        
+        [Fact]
+        public async Task CreateBooking_StartDateNotInTheFutureEndDateIs_ThrowsArgumentException()
+        {
+            // Arrange
+            Booking booking = new Booking
+            {
+                StartDate = DateTime.Today.AddDays(-1),
+                EndDate = DateTime.Today.AddDays(1)
+            };
+
+            // Act
+            Task result() => bookingManager.CreateBooking(booking);
+
+            // Assert
+            await Assert.ThrowsAsync<ArgumentException>(result);
+        }
+
+        [Fact]
+        public async Task CreateBooking_StartDateAndEndDateBeforeOccupied_ReturnsTrue()
+        {
+            // Arrange
+            Booking booking = new Booking
+            {
+                StartDate = DateTime.Today.AddDays(1),
+                EndDate = DateTime.Today.AddDays(2)
+            };
+            
+            // Act
+            bool result = await bookingManager.CreateBooking(booking);
+            
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task CreateBooking_StartDateAndEndDateOnEitherSideOfAllOccupied_ReturnsFalse()
+        {
+            // Arrange
+            Booking booking = new Booking
+            {
+                StartDate = DateTime.Today.AddDays(5),
+                EndDate = DateTime.Today.AddDays(25)
+            };
+
+            // Act
+            bool result = await bookingManager.CreateBooking(booking);
+            
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task CreateBooking_StartDateAndEndDateAfterOccupied_ReturnTrue()
+        {
+            // Arrange
+            Booking booking = new Booking
+            {
+                StartDate = DateTime.Today.AddDays(25),
+                EndDate = DateTime.Today.AddDays(30)
+            };
+            
+            // Act
+            bool result = await bookingManager.CreateBooking(booking);
+            
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task CreateBooking_StartDateBeforeEndDateInOccupied_ReturnFalse()
+        {
+            // Arrange
+            Booking booking = new Booking
+            {
+                StartDate = DateTime.Today.AddDays(5),
+                EndDate = DateTime.Today.AddDays(15)
+            };
+            
+            // Act
+            bool result = await bookingManager.CreateBooking(booking);
+            
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task CreateBooking_StartDateAndEndDateInOccupied_ReturnFalse()
+        {
+            // Arrange
+            Booking booking = new Booking
+            {
+                StartDate = DateTime.Today.AddDays(12),
+                EndDate = DateTime.Today.AddDays(15)
+            };
+            
+            // Act
+            bool result = await bookingManager.CreateBooking(booking);
+            
+            // Assert
+            Assert.False(result);
+        }
+        #endregion
+        
+        #region FindAvailableRoom
         [Fact]
         public async Task FindAvailableRoom_StartDateNotInTheFuture_ThrowsArgumentException()
         {
@@ -67,5 +189,10 @@ namespace HotelBooking.UnitTests
             Assert.Empty(bookingForReturnedRoomId);
         }
 
+        #endregion
+
+        #region GetFullyOccupiedDates
+        
+        #endregion
     }
 }
