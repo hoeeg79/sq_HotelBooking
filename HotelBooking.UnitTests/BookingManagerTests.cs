@@ -1,53 +1,38 @@
 using System;
 using HotelBooking.Core;
-using HotelBooking.UnitTests.Fakes;
 using Xunit;
 using System.Linq;
 using System.Threading.Tasks;
+using HotelBooking.UnitTests.Fixtures;
+using Moq;
 
 
 namespace HotelBooking.UnitTests
 {
-    public class BookingManagerTests
+    public class BookingManagerTests : IClassFixture<BookingFixture>
     {
-        private IBookingManager bookingManager;
-        IRepository<Booking> bookingRepository;
+        private readonly BookingFixture _fixture;
 
-        public BookingManagerTests(){
-            DateTime start = DateTime.Today.AddDays(10);
-            DateTime end = DateTime.Today.AddDays(20);
-            bookingRepository = new FakeBookingRepository(start, end);
-            IRepository<Room> roomRepository = new FakeRoomRepository();
-            bookingManager = new BookingManager(bookingRepository, roomRepository);
+        public BookingManagerTests(BookingFixture fixture)
+        {
+            _fixture = fixture;
         }
 
         #region CreateBooking
-        [Fact]
-        public async Task CreateBooking_StartDateAfterEndDate_ThrowsArgumentException()
+        [Theory]
+        [InlineData(2,1)]
+        [InlineData(-1,1)]
+        public async Task CreateBooking_StartDateAfterEndDate_ThrowsArgumentException(
+            int startOffset,
+            int endOffset)
         {
             // Arrange
             Booking booking = new Booking
             {
-                StartDate = DateTime.Today.AddDays(2),
-                EndDate = DateTime.Today.AddDays(1)
+                StartDate = DateTime.Today.AddDays(startOffset),
+                EndDate = DateTime.Today.AddDays(endOffset)
             };
-
-            // Act
-            Task result() => bookingManager.CreateBooking(booking);
-
-            // Assert
-            await Assert.ThrowsAsync<ArgumentException>(result);
-        }
-        
-        [Fact]
-        public async Task CreateBooking_StartDateNotInTheFutureEndDateIs_ThrowsArgumentException()
-        {
-            // Arrange
-            Booking booking = new Booking
-            {
-                StartDate = DateTime.Today.AddDays(-1),
-                EndDate = DateTime.Today.AddDays(1)
-            };
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
             Task result() => bookingManager.CreateBooking(booking);
@@ -56,16 +41,21 @@ namespace HotelBooking.UnitTests
             await Assert.ThrowsAsync<ArgumentException>(result);
         }
 
-        [Fact]
-        public async Task CreateBooking_StartDateAndEndDateBeforeOccupied_ReturnsTrue()
+        [Theory]
+        [InlineData(1,2)]
+        [InlineData(25,30)]
+        public async Task CreateBooking_StartDateAndEndDateBeforeOccupied_ReturnsTrue(
+            int startOffset,
+            int endOffset)
         {
             // Arrange
             Booking booking = new Booking
             {
-                StartDate = DateTime.Today.AddDays(1),
-                EndDate = DateTime.Today.AddDays(2)
+                StartDate = DateTime.Today.AddDays(startOffset),
+                EndDate = DateTime.Today.AddDays(endOffset)
             };
-            
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
+
             // Act
             bool result = await bookingManager.CreateBooking(booking);
             
@@ -73,66 +63,23 @@ namespace HotelBooking.UnitTests
             Assert.True(result);
         }
 
-        [Fact]
-        public async Task CreateBooking_StartDateAndEndDateOnEitherSideOfAllOccupied_ReturnsFalse()
+        [Theory]
+        [InlineData(5,25)]
+        [InlineData(5,15)]
+        [InlineData(12,15)]
+        [InlineData(15,25)]
+        public async Task CreateBooking_StartDateAndEndDateOnEitherSideOfAllOccupied_ReturnsFalse(
+            int startOffset,
+            int endOffset)
         {
             // Arrange
             Booking booking = new Booking
             {
-                StartDate = DateTime.Today.AddDays(5),
-                EndDate = DateTime.Today.AddDays(25)
-            };
-
-            // Act
-            bool result = await bookingManager.CreateBooking(booking);
-            
-            // Assert
-            Assert.False(result);
-        }
-
-        [Fact]
-        public async Task CreateBooking_StartDateAndEndDateAfterOccupied_ReturnTrue()
-        {
-            // Arrange
-            Booking booking = new Booking
-            {
-                StartDate = DateTime.Today.AddDays(25),
-                EndDate = DateTime.Today.AddDays(30)
+                StartDate = DateTime.Today.AddDays(startOffset),
+                EndDate = DateTime.Today.AddDays(endOffset)
             };
             
-            // Act
-            bool result = await bookingManager.CreateBooking(booking);
-            
-            // Assert
-            Assert.True(result);
-        }
-
-        [Fact]
-        public async Task CreateBooking_StartDateBeforeEndDateInOccupied_ReturnFalse()
-        {
-            // Arrange
-            Booking booking = new Booking
-            {
-                StartDate = DateTime.Today.AddDays(5),
-                EndDate = DateTime.Today.AddDays(15)
-            };
-            
-            // Act
-            bool result = await bookingManager.CreateBooking(booking);
-            
-            // Assert
-            Assert.False(result);
-        }
-
-        [Fact]
-        public async Task CreateBooking_StartDateAndEndDateInOccupied_ReturnFalse()
-        {
-            // Arrange
-            Booking booking = new Booking
-            {
-                StartDate = DateTime.Today.AddDays(12),
-                EndDate = DateTime.Today.AddDays(15)
-            };
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
             
             // Act
             bool result = await bookingManager.CreateBooking(booking);
@@ -141,22 +88,6 @@ namespace HotelBooking.UnitTests
             Assert.False(result);
         }
         
-        [Fact]
-        public async Task CreateBooking_StartDateInEndDateAfterOccupied_ReturnFalse()
-        {
-            // Arrange
-            Booking booking = new Booking
-            {
-                StartDate = DateTime.Today.AddDays(15),
-                EndDate = DateTime.Today.AddDays(25)
-            };
-
-            // Act
-            bool result = await bookingManager.CreateBooking(booking);
-
-            // Assert
-            Assert.False(result);
-        }
         #endregion
         
         #region FindAvailableRoom
@@ -168,11 +99,13 @@ namespace HotelBooking.UnitTests
         )
         {
             // Arrange
-            DateTime start = DateTime.Today.AddDays(startOffset);
-            DateTime end = DateTime.Today.AddDays(endOffset);
+            DateTime startDate = DateTime.Today.AddDays(startOffset);
+            DateTime endDate = DateTime.Today.AddDays(endOffset);
+            
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            Task result() => bookingManager.FindAvailableRoom(start, end);
+            Task result() => bookingManager.FindAvailableRoom(startDate, endDate);
 
             // Assert
             await Assert.ThrowsAsync<ArgumentException>(result);
@@ -186,10 +119,13 @@ namespace HotelBooking.UnitTests
         )
         {
             // Arrange
-            DateTime start = DateTime.Today.AddDays(startOffset);
-            DateTime end = DateTime.Today.AddDays(endOffset);
+            DateTime startDate = DateTime.Today.AddDays(startOffset);
+            DateTime endDate = DateTime.Today.AddDays(endOffset);
+
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
+            
             // Act
-            int roomId = await bookingManager.FindAvailableRoom(start, end);
+            int roomId = await bookingManager.FindAvailableRoom(startDate, endDate);
             // Assert
             Assert.NotEqual(-1, roomId);
         }
@@ -204,32 +140,40 @@ namespace HotelBooking.UnitTests
         )
         {
             // Arrange
-            DateTime start = DateTime.Today.AddDays(startOffset);
-            DateTime end = DateTime.Today.AddDays(endOffset);
+            DateTime startDate = DateTime.Today.AddDays(startOffset);
+            DateTime endDate = DateTime.Today.AddDays(endOffset);
+
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            int roomId = await bookingManager.FindAvailableRoom(start, end);
+            int roomId = await bookingManager.FindAvailableRoom(startDate, endDate);
 
             // Assert
             Assert.Equal(-1, roomId);
         }
 
-        [Fact]
-        public async Task FindAvailableRoom_RoomAvailable_ReturnsAvailableRoom()
+        [Theory]
+        [InlineData(1,1)]
+        public async Task FindAvailableRoom_RoomAvailable_ReturnsAvailableRoom(
+            int startOffset,
+            int endOffset)
         {
             // This test was added to satisfy the following test design
             // principle: "Tests should have strong assertions".
 
             // Arrange
-            DateTime date = DateTime.Today.AddDays(1);
-            
-            // Act
-            int roomId = await bookingManager.FindAvailableRoom(date, date);
+            DateTime startDate = DateTime.Today.AddDays(startOffset);
+            DateTime endDate = DateTime.Today.AddDays(endOffset);
 
-            var bookingForReturnedRoomId = (await bookingRepository.GetAllAsync()).
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
+
+            // Act
+            int roomId = await bookingManager.FindAvailableRoom(startDate, endDate);
+
+            var bookingForReturnedRoomId = (await _fixture.BookingRepositoryMock.Object.GetAllAsync()).
                 Where(b => b.RoomId == roomId
-                           && b.StartDate <= date
-                           && b.EndDate >= date
+                           && b.StartDate <= startDate
+                           && b.EndDate >= endDate
                            && b.IsActive);
             
             // Assert
@@ -243,39 +187,58 @@ namespace HotelBooking.UnitTests
         public async Task GetFullyOccupiedDates_StartDateAfterEndDate_ThrowsArgumentException()
         {
             // Arrange
-            DateTime start = DateTime.Today.AddDays(5);
-            DateTime end = DateTime.Today.AddDays(1);
+            DateTime startDate = DateTime.Today.AddDays(5);
+            DateTime endDate = DateTime.Today.AddDays(1);
+
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            Task result() => bookingManager.GetFullyOccupiedDates(start, end);
+            Task result() => bookingManager.GetFullyOccupiedDates(startDate, endDate);
 
             // Assert
             await Assert.ThrowsAsync<ArgumentException>(result);
         }
 
-        [Fact]
-        public async Task GetFullyOccupiedDates_StartDateAndEndDateBeforeOccupied_EmptyList()
+        [Theory]
+        [InlineData(1,5)]
+        [InlineData(25,30)]
+        public async Task GetFullyOccupiedDates_StartDateAndEndDateBeforeOrAfterOccupied_EmptyList(
+            int startOffset,
+            int endOffset)
         {
+            // This test was added to satisfy the following test design
+            // principle: "Tests should have strong assertions".
+
             // Arrange
-            DateTime start = DateTime.Today.AddDays(1);
-            DateTime end = DateTime.Today.AddDays(5);
+            DateTime startDate = DateTime.Today.AddDays(startOffset);
+            DateTime endDate = DateTime.Today.AddDays(endOffset);
+
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            var result = await bookingManager.GetFullyOccupiedDates(start, end);
+            var result = await bookingManager.GetFullyOccupiedDates(startDate, endDate);
 
             // Assert
             Assert.Empty(result);
         }
 
-        [Fact]
-        public async Task GetFullyOccupiedDates_StartDateAndEndDateOnEitherSideOfAllOccupied_AllDatesOccupied()
+        [Theory]
+        [InlineData(5,25)]
+        public async Task GetFullyOccupiedDates_StartDateAndEndDateOnEitherSideOfAllOccupied_AllDatesOccupied(
+            int startOffset,
+            int endOffset)
         {
+            // This test was added to satisfy the following test design
+            // principle: "Tests should have strong assertions".
+
             // Arrange
-            DateTime start = DateTime.Today.AddDays(5);
-            DateTime end = DateTime.Today.AddDays(25);
+            DateTime startDate = DateTime.Today.AddDays(startOffset);
+            DateTime endDate = DateTime.Today.AddDays(endOffset);
+
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            var result = await bookingManager.GetFullyOccupiedDates(start, end);
+            var result = await bookingManager.GetFullyOccupiedDates(startDate, endDate);
 
             // Assert
             var expectedDates = Enumerable.Range(0, 11)
@@ -286,12 +249,17 @@ namespace HotelBooking.UnitTests
         [Fact]
         public async Task GetFullyOccupiedDates_StartDateBeforeEndDateInOccupied_LaterHalfOccupied()
         {
+            // This test was added to satisfy the following test design
+            // principle: "Tests should have strong assertions".
+
             // Arrange
-            DateTime start = DateTime.Today.AddDays(5);
-            DateTime end = DateTime.Today.AddDays(15);
+            DateTime startDate = DateTime.Today.AddDays(5);
+            DateTime endDate = DateTime.Today.AddDays(15);
+
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            var result = await bookingManager.GetFullyOccupiedDates(start, end);
+            var result = await bookingManager.GetFullyOccupiedDates(startDate, endDate);
 
             // Assert
             var expectedDates = Enumerable.Range(0, 6)
@@ -303,11 +271,15 @@ namespace HotelBooking.UnitTests
         public async Task GetFullyOccupiedDates_StartDateAndEndDateInOccupied_AllOccupied()
         {
             // Arrange
-            DateTime start = DateTime.Today.AddDays(12);
-            DateTime end = DateTime.Today.AddDays(15);
+            DateTime startDate = DateTime.Today.AddDays(12);
+            DateTime endDate = DateTime.Today.AddDays(15);
+            
+            
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            var result = await bookingManager.GetFullyOccupiedDates(start, end);
+            // Act
+            var result = await bookingManager.GetFullyOccupiedDates(startDate, endDate);
 
             // Assert
             var expectedDates = Enumerable.Range(0, 4)
@@ -319,31 +291,21 @@ namespace HotelBooking.UnitTests
         public async Task GetFullyOccupiedDates_StartDateInEndDateAfterOccupied_FirstHalfOccupied()
         {
             // Arrange
-            DateTime start = DateTime.Today.AddDays(15);
-            DateTime end = DateTime.Today.AddDays(25);
+            DateTime startDate = DateTime.Today.AddDays(15);
+            DateTime endDate = DateTime.Today.AddDays(25);
+            
+            
+            var bookingManager = new BookingManager(_fixture.BookingRepositoryMock.Object, _fixture.RoomRepositoryMock.Object);
 
             // Act
-            var result = await bookingManager.GetFullyOccupiedDates(start, end);
+            var result = await bookingManager.GetFullyOccupiedDates(startDate, endDate);
 
             // Assert
             var expectedDates = Enumerable.Range(0, 6)
                 .Select(d => DateTime.Today.AddDays(15 + d)); // overlap 15–20
             Assert.Equal(expectedDates, result);
         }
-
-        [Fact]
-        public async Task GetFullyOccupiedDates_StartDateAndEndDateAfterOccupied_EmptyList()
-        {
-            // Arrange
-            DateTime start = DateTime.Today.AddDays(25);
-            DateTime end = DateTime.Today.AddDays(30);
-
-            // Act
-            var result = await bookingManager.GetFullyOccupiedDates(start, end);
-
-            // Assert
-            Assert.Empty(result);
-        }
+        
         #endregion
         
         
