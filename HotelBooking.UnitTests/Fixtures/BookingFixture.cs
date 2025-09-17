@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using HotelBooking.Core;
 using Moq;
 
@@ -23,6 +24,10 @@ public class BookingFixture
                 new Booking { Id=2, StartDate=Today.AddDays(10), EndDate=Today.AddDays(20), IsActive=true, CustomerId=1, RoomId=1 },
                 new Booking { Id=3, StartDate=Today.AddDays(10), EndDate=Today.AddDays(20), IsActive=true, CustomerId=2, RoomId=2 },
             });
+        
+        BookingRepositoryMock
+            .Setup(repo => repo.AddAsync(It.IsAny<Booking>()))
+            .Returns(Task.CompletedTask);
 
         RoomRepositoryMock.Setup(repo => repo.GetAllAsync())
             .ReturnsAsync(new List<Room>
