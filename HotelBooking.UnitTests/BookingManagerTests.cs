@@ -160,25 +160,16 @@ namespace HotelBooking.UnitTests
         #endregion
         
         #region FindAvailableRoom
-        [Fact]
-        public async Task FindAvailableRoom_StartDateNotInTheFuture_ThrowsArgumentException()
+        [Theory]
+        [InlineData(0,0)]
+        [InlineData(-1,1)]
+        public async Task FindAvailableRoom_DateInvalid_ThrowsArgumentException(
+            int startOffset, int endOffset
+        )
         {
             // Arrange
-            DateTime date = DateTime.Today;
-
-            // Act
-            Task result() => bookingManager.FindAvailableRoom(date, date);
-
-            // Assert
-            await Assert.ThrowsAsync<ArgumentException>(result);
-        }
-
-        [Fact]
-        public async Task FindAvailableRoom_StartDateNotInTheFutureEndDateIs_ThrowsArgumentException()
-        {
-            // Arrange
-            DateTime start = DateTime.Today.AddDays(-1);
-            DateTime end = DateTime.Today.AddDays(1);
+            DateTime start = DateTime.Today.AddDays(startOffset);
+            DateTime end = DateTime.Today.AddDays(endOffset);
 
             // Act
             Task result() => bookingManager.FindAvailableRoom(start, end);
@@ -187,23 +178,34 @@ namespace HotelBooking.UnitTests
             await Assert.ThrowsAsync<ArgumentException>(result);
         }
         
-        [Fact]
-        public async Task FindAvailableRoom_RoomAvailable_RoomIdNotMinusOne()
+        [Theory]
+        [InlineData(1,1)]
+        [InlineData(25,30)]
+        public async Task FindAvailableRoom_RoomAvailable_RoomIdNotMinusOne(
+            int startOffset, int endOffset
+        )
         {
             // Arrange
-            DateTime date = DateTime.Today.AddDays(1);
+            DateTime start = DateTime.Today.AddDays(startOffset);
+            DateTime end = DateTime.Today.AddDays(endOffset);
             // Act
-            int roomId = await bookingManager.FindAvailableRoom(date, date);
+            int roomId = await bookingManager.FindAvailableRoom(start, end);
             // Assert
             Assert.NotEqual(-1, roomId);
         }
         
-        [Fact]
-        public async Task FindAvailableRoom_StartDateAndEndDateOnEitherSideOfAllOccupied_ReturnMinusOne()
+        [Theory]
+        [InlineData(5, 25)]
+        [InlineData(5, 15)]
+        [InlineData(12,15)]
+        [InlineData(15,25)]
+        public async Task FindAvailableRoom_RoomNotAvailable_ReturnMinusOne(
+            int startOffset, int endOffset
+        )
         {
             // Arrange
-            DateTime start = DateTime.Today.AddDays(5);
-            DateTime end = DateTime.Today.AddDays(25);
+            DateTime start = DateTime.Today.AddDays(startOffset);
+            DateTime end = DateTime.Today.AddDays(endOffset);
 
             // Act
             int roomId = await bookingManager.FindAvailableRoom(start, end);
@@ -232,62 +234,6 @@ namespace HotelBooking.UnitTests
             
             // Assert
             Assert.Empty(bookingForReturnedRoomId);
-        }
-        
-        [Fact]
-        public async Task FindAvailableRoom_StartDateBeforeEndDateInOccupied_ReturnMinusOne()
-        {
-            // Arrange
-            DateTime start = DateTime.Today.AddDays(5);
-            DateTime end = DateTime.Today.AddDays(15);
-
-            // Act
-            int roomId = await bookingManager.FindAvailableRoom(start, end);
-
-            // Assert
-            Assert.Equal(-1, roomId);
-        }
-
-        [Fact]
-        public async Task FindAvailableRoom_StartDateAndEndDateInOccupied_ReturnMinusOne()
-        {
-            // Arrange
-            DateTime start = DateTime.Today.AddDays(12);
-            DateTime end = DateTime.Today.AddDays(15);
-
-            // Act
-            int roomId = await bookingManager.FindAvailableRoom(start, end);
-
-            // Assert
-            Assert.Equal(-1, roomId);
-        }
-
-        [Fact]
-        public async Task FindAvailableRoom_StartDateInEndDateAfterOccupied_ReturnMinusOne()
-        {
-            // Arrange
-            DateTime start = DateTime.Today.AddDays(15);
-            DateTime end = DateTime.Today.AddDays(25);
-
-            // Act
-            int roomId = await bookingManager.FindAvailableRoom(start, end);
-
-            // Assert
-            Assert.Equal(-1, roomId);
-        }
-
-        [Fact]
-        public async Task FindAvailableRoom_StartDateAndEndDateAfterOccupied_RoomIdNotMinus()
-        {
-            // Arrange
-            DateTime start = DateTime.Today.AddDays(25);
-            DateTime end = DateTime.Today.AddDays(30);
-
-            // Act
-            int roomId = await bookingManager.FindAvailableRoom(start, end);
-
-            // Assert
-            Assert.NotEqual(-1, roomId);
         }
 
         #endregion
