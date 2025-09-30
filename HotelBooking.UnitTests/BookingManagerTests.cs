@@ -180,6 +180,7 @@ namespace HotelBooking.UnitTests
         }
 
         #endregion
+        
         #region GetFullyOccupiedDates
         
         [Fact]
