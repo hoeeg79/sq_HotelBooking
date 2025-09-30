@@ -4,7 +4,6 @@ using Xunit;
 using System.Linq;
 using System.Threading.Tasks;
 using HotelBooking.UnitTests.Fixtures;
-using Moq;
 
 
 namespace HotelBooking.UnitTests
