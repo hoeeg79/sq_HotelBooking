@@ -15,4 +15,8 @@
         <PackageReference Include="FluentAssertions" Version="6.12.0"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\HotelBooking.Core\HotelBooking.Core.csproj" />
+    </ItemGroup>
+
 </Project>
