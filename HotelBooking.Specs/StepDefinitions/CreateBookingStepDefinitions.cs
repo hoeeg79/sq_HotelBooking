@@ -18,9 +18,8 @@ public sealed class CreateBookingStepDefinitions
     }
 
     [Given("a customer wants to book a room from {string} to {string}")]
-    public void GivenACustomerWantsToBookARoomFromTo(string p0, string p1)
+    public void GivenACustomerWantsToBookARoomFromTo(string startDate, string endDate)
     {
-        // TODO: implement arrange (precondition) logic
         ScenarioContext.StepIsPending();
     }
 
