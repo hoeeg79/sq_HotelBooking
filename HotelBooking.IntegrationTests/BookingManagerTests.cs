@@ -54,6 +54,9 @@ namespace HotelBooking.IntegrationTests
                 await bookingManager.FindAvailableRoom(DateTime.Today.AddDays(8), DateTime.Today.AddDays(8));
             // Assert
             Assert.Equal(-1, roomId);
+
+
+           Dispose();
         }
     }
 }
