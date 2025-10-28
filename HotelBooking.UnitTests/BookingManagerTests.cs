@@ -3,7 +3,7 @@ using HotelBooking.Core;
 using Xunit;
 using System.Linq;
 using System.Threading.Tasks;
-using HotelBooking.UnitTests.Fixtures;
+using HotelBooking.TestUtils.Fakes;
 
 
 namespace HotelBooking.UnitTests

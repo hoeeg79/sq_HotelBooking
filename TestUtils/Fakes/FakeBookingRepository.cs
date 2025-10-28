@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using HotelBooking.Core;
 
-namespace HotelBooking.UnitTests.Fakes
+namespace HotelBooking.TestUtils.Fakes
 {
     public class FakeBookingRepository : IRepository<Booking>
     {

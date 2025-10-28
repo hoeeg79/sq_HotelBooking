@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using HotelBooking.Core;
 using Moq;
 
-namespace HotelBooking.UnitTests.Fixtures;
+namespace HotelBooking.TestUtils.Fakes;
 
 public class BookingFixture
 {    

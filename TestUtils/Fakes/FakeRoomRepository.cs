@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using HotelBooking.Core;
 
-namespace HotelBooking.UnitTests.Fakes
+namespace HotelBooking.TestUtils.Fakes
 {
     public class FakeRoomRepository : IRepository<Room>
     {
