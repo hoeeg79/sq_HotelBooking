@@ -10,4 +10,4 @@ Scenario Outline: Create booking for an available room
     Examples:
         | StartDate | EndDate |
         | 1         | 1       |
-        | 2         | 3       |
+        | 25        | 30      |
